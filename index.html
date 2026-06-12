@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deck Masters | Toronto Deck Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: '#C67C4E',
+          secondary: '#4A4A4A',
+          accent: '#2D5A5A',
+          brand: {
+            text: '#2C2C2C',
+            bg: '#FFFFFF',
+          },
+          dark: '#0a0a0a',
+        },
+        fontFamily: {
+          heading: ['Montserrat', 'sans-serif'],
+          body: ['Plus Jakarta Sans', 'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
+<style>
+  :root {
+    --color-primary: #C67C4E;
+    --color-secondary: #4A4A4A;
+    --color-accent: #2D5A5A;
+    --font-display: 'Montserrat', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .hero-bg {
+    background: linear-gradient(135deg, #4A4A4A, #C67C4E, #4A4A4A);
+    background-size: 300% 300%;
+    animation: gradientShift 12s ease infinite;
+  }
+
+  .reveal { opacity: 0; transform: translateY(30px); transition: all 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  .nav.scrolled { background: #0a0a0a !important; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+
+  .cs { position: relative; overflow: hidden; }
+  .cs-after {
+    position: absolute; inset: 0;
+    clip-path: inset(0 50% 0 0);
+    transition: clip-path 0.05s linear;
+  }
+  .cs input[type=range] {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: ew-resize; z-index: 10;
+  }
+
+  /* ── Hero Scroll Animation ─────────────────────────────── */
+  #hero-wrapper {
+    position: relative;  /* ScrollTrigger pins this; do not set height */
+  }
+  #hero {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #hero-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .hero-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .scroll-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+  }
+  .scroll-kicker {
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+  }
+  .scroll-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    color: #fff;
+  }
+  .scroll-cue {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .scroll-line {
+    display: block;
+    width: 1px;
+    height: 40px;
+    background: rgba(255,255,255,0.4);
+    animation: scrollLineGrow 1.8s ease-in-out infinite;
+  }
+  .scroll-chevrons {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .scroll-chevron {
+    width: 10px;
+    height: 10px;
+    border-right: 1.5px solid rgba(255,255,255,0.5);
+    border-bottom: 1.5px solid rgba(255,255,255,0.5);
+    transform: rotate(45deg);
+    animation: chevronFade 1.8s ease-in-out infinite;
+  }
+  .scroll-chevron:nth-child(2) { animation-delay: 0.15s; }
+  .scroll-chevron:nth-child(3) { animation-delay: 0.30s; }
+  @keyframes scrollLineGrow {
+    0%, 100% { opacity: 0.3; transform: scaleY(0.6); }
+    50%       { opacity: 1;   transform: scaleY(1);   }
+  }
+  @keyframes chevronFade {
+    0%, 100% { opacity: 0.2; }
+    50%       { opacity: 0.8; }
+  }
+
+  .hero-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 10;
+  }
+  .hero-content.is-visible {
+    pointer-events: auto;
+  }
+  .hero-label {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-accent, var(--color-primary));
+    margin-bottom: 1rem;
+  }
+  .hero-headline {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    color: #fff;
+    margin-bottom: 1rem;
+  }
+  .hero-sub {
+    font-family: var(--font-body);
+    font-size: clamp(1rem, 1.5vw, 1.2rem);
+    color: rgba(255,255,255,0.82);
+    line-height: 1.6;
+    max-width: 520px;
+    margin-bottom: 2rem;
+  }
+
+  @media (max-width: 768px) {
+    #hero { height: 100svh; }
+    .scroll-title { font-size: clamp(1.6rem, 7vw, 2.5rem); }
+  }
+</style>
+</head>
+<body class="bg-white">
+
+<!-- Navigation -->
+<nav class="nav fixed top-0 w-full z-50 transition-all duration-300" id="nav">
+  <div class="max-w-screen-xl mx-auto px-6 flex items-center justify-between h-16">
+    <a href="#" class="font-heading font-extrabold text-xl text-white tracking-tight">Deck Masters</a>
+    <ul class="hidden md:flex items-center gap-8 font-body text-sm font-medium text-white/90">
+      <li><a href="#services" class="hover:text-white transition-colors">Services</a></li>
+      <li><a href="#gallery" class="hover:text-white transition-colors">Our Work</a></li>
+      <li><a href="#testimonials" class="hover:text-white transition-colors">Reviews</a></li>
+      <li><a href="#contact" class="inline-block bg-primary text-white px-5 py-2 font-bold uppercase tracking-widest text-xs rounded hover:opacity-90 transition-opacity">Get a Free Quote</a></li>
+    </ul>
+    <button class="nav__toggle md:hidden text-white text-2xl" aria-label="Menu">&#9776;</button>
+  </div>
+  <div class="nav__menu hidden flex-col bg-dark px-6 pb-6 gap-4 font-body text-sm text-white/90">
+    <a href="#services" class="py-2 border-b border-white/10">Services</a>
+    <a href="#gallery" class="py-2 border-b border-white/10">Our Work</a>
+    <a href="#testimonials" class="py-2 border-b border-white/10">Reviews</a>
+    <a href="#contact" class="mt-2 inline-block bg-primary text-white px-5 py-3 font-bold uppercase tracking-widest text-xs rounded text-center">Get a Free Quote</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- SECTION: hero -->
+<div id="hero-wrapper">
+  <section id="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-overlay"></div>
+
+    <div class="scroll-indicator">
+      <div class="scroll-copy">
+        <span class="scroll-kicker">Watch the transformation</span>
+        <span class="scroll-title">
+          <span>Scroll Down</span>
+          <span>To Build This Deck</span>
+        </span>
+      </div>
+      <div class="scroll-cue" aria-hidden="true">
+        <span class="scroll-line"></span>
+        <div class="scroll-chevrons">
+          <div class="scroll-chevron"></div>
+          <div class="scroll-chevron"></div>
+          <div class="scroll-chevron"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-content">
+      <span class="hero-label">Custom Deck Building · Toronto</span>
+      <h1 class="hero-headline">Transform Your Outdoor Space Into a Premium Retreat</h1>
+      <p class="hero-sub">Custom-built decks engineered for Toronto's climate and designed for the way you live. From concept to completion, we build outdoor spaces that become the heart of your home.</p>
+      <a href="#contact" class="btn btn--primary inline-block bg-primary text-white px-8 py-3.5 font-heading font-bold uppercase tracking-widest text-sm rounded hover:opacity-90 transition-opacity cursor-pointer">Get Your Free Quote &nbsp;→</a>
+    </div>
+  </section>
+</div>
+
+<!-- SECTION: services -->
+<section id="services" class="py-20 md:py-28 bg-white">
+  <div class="max-w-screen-xl mx-auto px-6">
+    <h2 class="reveal font-heading font-extrabold text-4xl md:text-5xl text-brand-text mb-4">Built for the Way You Live</h2>
+    <p class="reveal font-body text-lg text-gray-500 mb-12 max-w-2xl">
+      Every Deck Masters project is custom-designed around your home, your yard, and how you want to use your outdoor space — from quiet mornings to backyard gatherings.
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+
+      <!-- Service 1 -->
+      <div class="reveal group bg-white border border-gray-100 rounded-lg p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <div class="w-14 h-14 bg-primary rounded-lg flex items-center justify-center mb-5">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l-2-2h12l-2 2v13M9 9h6m-6 4h6" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-text mb-2">Custom Composite Deck Design &amp; Build</h3>
+        <p class="font-body text-sm text-gray-500 leading-relaxed">Low-maintenance composite decking engineered to your layout, with custom railing and finishing details built to last.</p>
+      </div>
+
+      <!-- Service 2 -->
+      <div class="reveal group bg-white border border-gray-100 rounded-lg p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <div class="w-14 h-14 bg-primary rounded-lg flex items-center justify-center mb-5">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-text mb-2">Premium Wood Deck Construction</h3>
+        <p class="font-body text-sm text-gray-500 leading-relaxed">Cedar and pressure-treated wood decks built with precision joinery and premium hardware for a timeless, natural look.</p>
+      </div>
+
+      <!-- Service 3 -->
+      <div class="reveal group bg-white border border-gray-100 rounded-lg p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <div class="w-14 h-14 bg-primary rounded-lg flex items-center justify-center mb-5">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-text mb-2">Deck Renovation &amp; Restoration</h3>
+        <p class="font-body text-sm text-gray-500 leading-relaxed">Breathe new life into an aging deck — structural repairs, board replacement, and a complete finish upgrade.</p>
+      </div>
+
+      <!-- Service 4 -->
+      <div class="reveal group bg-white border border-gray-100 rounded-lg p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <div class="w-14 h-14 bg-primary rounded-lg flex items-center justify-center mb-5">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-text mb-2">Covered &amp; Pergola Installations</h3>
+        <p class="font-body text-sm text-gray-500 leading-relaxed">Extend your outdoor season with a custom pergola or covered structure — built to integrate seamlessly with your deck.</p>
+      </div>
+
+      <!-- Service 5 -->
+      <div class="reveal group bg-white border border-gray-100 rounded-lg p-6 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+        <div class="w-14 h-14 bg-primary rounded-lg flex items-center justify-center mb-5">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h3 class="font-heading font-bold text-lg text-brand-text mb-2">Deck Staining &amp; Waterproofing</h3>
+        <p class="font-body text-sm text-gray-500 leading-relaxed">Protect your investment with professional-grade staining and waterproofing that stands up to Toronto winters.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION: gallery -->
+<section id="gallery" class="py-20 md:py-28 bg-[#0a0a0a]">
+  <div class="max-w-screen-xl mx-auto px-6">
+    <h2 class="reveal font-heading font-extrabold text-4xl md:text-5xl text-white mb-4">The Difference</h2>
+    <p class="reveal font-body text-lg text-white/50 mb-12 max-w-2xl">
+      Drag the slider to see how we turn tired, underused yards into outdoor living spaces homeowners actually use.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+      <!-- Comparison 1 -->
+      <div class="reveal">
+        <div class="cs rounded-lg aspect-[4/3]">
+          <div class="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
+            <span class="font-heading font-bold text-white/30 text-sm uppercase tracking-widest">Before</span>
+          </div>
+          <div class="cs-after absolute inset-0 bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <span class="font-heading font-bold text-white/40 text-sm uppercase tracking-widest">After</span>
+          </div>
+          <input type="range" min="0" max="100" value="50">
+        </div>
+        <h3 class="font-heading font-bold text-white mt-4 mb-1">From Bare Yard to Backyard Retreat</h3>
+        <p class="font-body text-sm text-white/50">An unused side yard becomes a multi-level composite deck with built-in seating.</p>
+      </div>
+
+      <!-- Comparison 2 -->
+      <div class="reveal">
+        <div class="cs rounded-lg aspect-[4/3]">
+          <div class="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
+            <span class="font-heading font-bold text-white/30 text-sm uppercase tracking-widest">Before</span>
+          </div>
+          <div class="cs-after absolute inset-0 bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <span class="font-heading font-bold text-white/40 text-sm uppercase tracking-widest">After</span>
+          </div>
+          <input type="range" min="0" max="100" value="50">
+        </div>
+        <h3 class="font-heading font-bold text-white mt-4 mb-1">Worn Deck, Rebuilt and Refinished</h3>
+        <p class="font-body text-sm text-white/50">A weathered 15-year-old deck is fully restructured with new composite boards and railings.</p>
+      </div>
+
+      <!-- Comparison 3 -->
+      <div class="reveal">
+        <div class="cs rounded-lg aspect-[4/3]">
+          <div class="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center">
+            <span class="font-heading font-bold text-white/30 text-sm uppercase tracking-widest">Before</span>
+          </div>
+          <div class="cs-after absolute inset-0 bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <span class="font-heading font-bold text-white/40 text-sm uppercase tracking-widest">After</span>
+          </div>
+          <input type="range" min="0" max="100" value="50">
+        </div>
+        <h3 class="font-heading font-bold text-white mt-4 mb-1">Adding a Covered Pergola</h3>
+        <p class="font-body text-sm text-white/50">An exposed deck gains a custom pergola with integrated lighting for year-round entertaining.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION: testimonials -->
+<section id="testimonials" class="py-20 md:py-28 bg-white">
+  <div class="max-w-screen-xl mx-auto px-6">
+    <h2 class="reveal font-heading font-extrabold text-4xl md:text-5xl text-brand-text mb-4">What Toronto Homeowners Say</h2>
+    <p class="reveal font-body text-lg text-gray-500 mb-12 max-w-2xl">
+      Real projects, real feedback — from families now enjoying outdoor spaces they couldn't wait to use.
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Testimonial 1 -->
+      <div class="reveal bg-gray-50 rounded-lg p-8 flex flex-col">
+        <span class="font-heading text-5xl text-accent mb-4 leading-none">"</span>
+        <p class="font-body text-brand-text leading-relaxed mb-6 flex-1">
+          Our new composite deck in High Park completely changed how we use our backyard. The crew was professional, on time, and the finish quality is incredible — better than we imagined.
+        </p>
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center font-heading font-bold text-white">JM</div>
+          <div>
+            <p class="font-heading font-bold text-sm text-brand-text">Jennifer M.</p>
+            <p class="font-body text-xs text-gray-500">High Park, Toronto</p>
+            <p class="text-accent text-sm mt-1">★★★★★</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonial 2 -->
+      <div class="reveal bg-gray-50 rounded-lg p-8 flex flex-col">
+        <span class="font-heading text-5xl text-accent mb-4 leading-none">"</span>
+        <p class="font-body text-brand-text leading-relaxed mb-6 flex-1">
+          Deck Masters rebuilt our old cedar deck that was falling apart. They handled everything from permits to the final stain. Three years later it still looks brand new.
+        </p>
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center font-heading font-bold text-white">RT</div>
+          <div>
+            <p class="font-heading font-bold text-sm text-brand-text">Robert T.</p>
+            <p class="font-body text-xs text-gray-500">Etobicoke, Toronto</p>
+            <p class="text-accent text-sm mt-1">★★★★★</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonial 3 -->
+      <div class="reveal bg-gray-50 rounded-lg p-8 flex flex-col">
+        <span class="font-heading text-5xl text-accent mb-4 leading-none">"</span>
+        <p class="font-body text-brand-text leading-relaxed mb-6 flex-1">
+          We added a covered pergola to our existing deck and it's now our favorite spot in the house. The design suggestions from the team made a huge difference — highly recommend.
+        </p>
+        <div class="flex items-center gap-4">
+          <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center font-heading font-bold text-white">SK</div>
+          <div>
+            <p class="font-heading font-bold text-sm text-brand-text">Sarah K.</p>
+            <p class="font-body text-xs text-gray-500">Leaside, Toronto</p>
+            <p class="text-accent text-sm mt-1">★★★★★</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- SECTION: cta -->
+<section id="contact" class="py-20 md:py-28 bg-primary">
+  <div class="max-w-screen-xl mx-auto px-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+      <!-- Left -->
+      <div class="reveal">
+        <h2 class="font-heading font-extrabold text-4xl md:text-5xl text-white mb-6">
+          Ready for Your Dream Deck?
+        </h2>
+        <div class="flex flex-col gap-3 mb-8 font-body text-white/90">
+          <span class="flex items-center gap-2">✓ Free On-Site Consultation</span>
+          <span class="flex items-center gap-2">✓ 10-Year Workmanship Warranty</span>
+          <span class="flex items-center gap-2">✓ Serving Toronto &amp; Surrounding Areas</span>
+        </div>
+        <a href="tel:289-205-9150" class="font-heading font-extrabold text-3xl md:text-4xl text-white hover:opacity-90 transition-opacity">
+          289-205-9150
+        </a>
+      </div>
+
+      <!-- Right: Form -->
+      <div class="reveal bg-white rounded-lg p-8 shadow-2xl">
+        <h3 class="font-heading font-bold text-2xl text-brand-text mb-6">Schedule Your Consultation</h3>
+        <form class="flex flex-col gap-4">
+          <input type="text" placeholder="Name" class="border border-gray-300 rounded px-4 py-3 font-body text-sm w-full focus:border-primary outline-none">
+          <input type="tel" placeholder="Phone" class="border border-gray-300 rounded px-4 py-3 font-body text-sm w-full focus:border-primary outline-none">
+          <select class="border border-gray-300 rounded px-4 py-3 font-body text-sm w-full focus:border-primary outline-none text-gray-500">
+            <option>Service Type</option>
+            <option>Custom Composite Deck Design &amp; Build</option>
+            <option>Premium Wood Deck Construction</option>
+            <option>Deck Renovation &amp; Restoration</option>
+            <option>Covered &amp; Pergola Installations</option>
+            <option>Deck Staining &amp; Waterproofing</option>
+          </select>
+          <button type="submit" class="inline-block bg-accent text-white px-8 py-3.5 font-heading font-bold uppercase tracking-widest text-sm rounded hover:opacity-90 transition-opacity cursor-pointer">
+            Get Your Free Quote
+          </button>
+          <p class="font-body text-xs text-gray-400 text-center">No spam. We'll call you within 24 hours.</p>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="bg-dark text-white py-8">
+  <div class="max-w-screen-xl mx-auto px-6 text-center font-body text-sm text-white/60">
+    <p>&copy; 2026 Deck Masters. All rights reserved. | Toronto</p>
+  </div>
+</footer>
+
+<script>
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 50);
+  });
+
+  document.querySelector('.nav__toggle').addEventListener('click', () => {
+    document.querySelector('.nav__menu').classList.toggle('hidden');
+    document.querySelector('.nav__menu').classList.toggle('flex');
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  document.querySelectorAll('.cs input[type=range]').forEach(input => {
+    input.addEventListener('input', function() {
+      const pct = this.value;
+      this.closest('.cs').querySelector('.cs-after').style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+    });
+  });
+</script>
+
+<!-- GSAP + ScrollTrigger (required by hero-frame-scroll.js) -->
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/ScrollTrigger.min.js"></script>
+<script>gsap.registerPlugin(ScrollTrigger);</script>
+
+<script src="assets/hero-frame-scroll.js"></script>
+<script>
+  initFrameScrollHero({
+    frameCount : 119,
+    framePath  : function(i) {
+      return 'assets/frames/frame_' + String(i).padStart(4, '0') + '.jpg';
+    }
+  });
+</script>
+
+</body>
+</html>
